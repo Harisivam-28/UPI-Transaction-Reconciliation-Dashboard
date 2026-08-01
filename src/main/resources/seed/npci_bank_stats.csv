@@ -1,0 +1,11 @@
+bank_name,historical_bd_rate,historical_td_rate,historical_deemed_approved_rate,source_note
+Airtel Payments Bank Limited,0.2028,0.0010,0.0015,"Real NPCI data via dataful.in, June 2026, Payee category"
+Axis Bank Ltd.,0.0736,0.0010,0.0015,"Real NPCI data via dataful.in, June 2026, Payee category"
+Canara Bank,0.0245,0.0008,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+Federal Bank Ltd.,0.0254,0.0009,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+HDFC Bank Ltd.,0.0584,0.0009,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+ICICI Bank Ltd.,0.0710,0.0009,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+Indusind Bank Ltd.,0.0754,0.0027,0.0020,"Real NPCI data via dataful.in, June 2026, Payee category"
+Kotak Mahindra Bank,0.0891,0.0008,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+NPCI BHIM Services Ltd (NBSL),0.0339,0.0008,0.0012,"Real NPCI data via dataful.in, June 2026, Payee category"
+NSDL Payments Bank Limited,0.5776,0.0015,0.0025,"Real NPCI data via dataful.in, June 2026, Payee category"

@@ -1,0 +1,8 @@
+.git
+.gitignore
+*.md
+ml-service/
+build/
+.gradle/
+.idea/
+*.iml
