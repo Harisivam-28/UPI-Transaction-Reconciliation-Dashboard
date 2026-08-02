@@ -68,3 +68,4 @@ reconciliation:
   simulated-day-seconds: 20
   batch-tick-interval-seconds: 7    # ~20/3, mimics 11PM/2AM/5AM batch cadence
   escalation-threshold-days: 2      # demo: T+3
+  anomaly-window-seconds: 60        # §5: rolling window for failure-rate computation

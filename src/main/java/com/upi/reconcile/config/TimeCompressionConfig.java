@@ -46,4 +46,9 @@ public class TimeCompressionConfig {
     public int getEscalationThresholdSeconds() {
         return simulatedDaySeconds * escalationThresholdDays;
     }
+
+    // ── Anomaly Detection (§5) ───────────────────────────────────────────
+
+    @Value("${reconciliation.anomaly-window-seconds:60}")
+    private int anomalyWindowSeconds;
 }
