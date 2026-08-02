@@ -1,6 +1,7 @@
 package com.upi.reconcile.domain;
 
 import com.upi.reconcile.config.TimeCompressionConfig;
+import com.upi.reconcile.ml.MlClassificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class TransactionProcessingService {
     private final BankRepository bankRepository;
     private final StateMachine stateMachine;
     private final TimeCompressionConfig timeConfig;
+    private final MlClassificationService mlClassificationService;
 
     /**
      * Process a brand-new webhook event end-to-end.
@@ -104,6 +106,12 @@ public class TransactionProcessingService {
                 ? "Decline code: " + declineCode
                 : "Match found — amounts/IDs align";
         recordTransition(txn, TransactionState.INITIATED, nextState, reason, now);
+
+        // 7. ML classification for transactions entering reconciliation/mismatch states
+        if (nextState == TransactionState.PENDING_RECONCILIATION
+                || nextState == TransactionState.DEEMED_APPROVED) {
+            mlClassificationService.classify(txn);
+        }
 
         log.info("Created transaction {} — INITIATED → {} (key={})",
                 txn.getTxnId(), nextState, idempotencyKey);

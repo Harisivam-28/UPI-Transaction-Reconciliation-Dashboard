@@ -74,4 +74,12 @@ public class Transaction {
 
     @Column(name = "order_reference")
     private String orderReference;
+
+    /** ML classifier prediction: stuck_payment | wrong_amount | duplicate_charge | no_mismatch */
+    @Column(name = "ml_classification")
+    private String mlClassification;
+
+    /** Model confidence score for the predicted classification (0.0 - 1.0). */
+    @Column(name = "ml_confidence", precision = 5, scale = 4)
+    private BigDecimal mlConfidence;
 }

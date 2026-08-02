@@ -10,6 +10,7 @@ import com.upi.reconcile.domain.TransactionEvent;
 import com.upi.reconcile.domain.TransactionRepository;
 import com.upi.reconcile.domain.TransactionState;
 import com.upi.reconcile.domain.TransactionStateChangedEvent;
+import com.upi.reconcile.ml.MlClassificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -52,6 +53,7 @@ public class BatchResolutionScheduler {
     private final PenaltyEngine penaltyEngine;
     private final TimeCompressionConfig timeConfig;
     private final ApplicationEventPublisher eventPublisher;
+    private final MlClassificationService mlClassificationService;
 
     @Scheduled(fixedDelayString = "${reconciliation.batch-tick-interval-seconds:7}000")
     public void runBatchResolution() {
@@ -95,6 +97,11 @@ public class BatchResolutionScheduler {
 
         for (Transaction txn : pending) {
             try {
+                // Tag each transaction with ML classification before processing
+                if (txn.getMlClassification() == null) {
+                    mlClassificationService.classify(txn);
+                }
+
                 double resolutionProbability = computeResolutionProbability(txn);
                 double roll = ThreadLocalRandom.current().nextDouble();
 
