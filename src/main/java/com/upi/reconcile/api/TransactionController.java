@@ -52,6 +52,7 @@ public class TransactionController {
 
     // ── GET /api/transactions ─────────────────────────────────────
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<Page<TransactionDto>> listTransactions(
             @RequestParam(required = false) String state,
