@@ -1,9 +1,9 @@
--- V1__init_schema.sql
--- Core schema from ARCHITECTURE.md §6
+-- V1__init_schema.sql (H2-compatible version for tests)
+-- Core schema from ARCHITECTURE.md §6, adapted for H2 MODE=PostgreSQL
 
 CREATE TABLE banks (
     bank_id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
+    name VARCHAR(255) NOT NULL,
     historical_bd_rate NUMERIC(6,4),
     historical_td_rate NUMERIC(6,4),
     historical_deemed_approved_rate NUMERIC(6,4)
@@ -11,18 +11,18 @@ CREATE TABLE banks (
 
 CREATE TABLE transactions (
     txn_id UUID PRIMARY KEY,
-    idempotency_key TEXT UNIQUE NOT NULL,
+    idempotency_key VARCHAR(255) UNIQUE NOT NULL,
     remitter_bank_id UUID REFERENCES banks(bank_id),
     beneficiary_bank_id UUID REFERENCES banks(bank_id),
     amount_inr NUMERIC(12,2),
-    state TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL,
-    tat_deadline TIMESTAMPTZ,
-    penalty_start_at TIMESTAMPTZ,
-    resolved_at TIMESTAMPTZ,
+    state VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    tat_deadline TIMESTAMP WITH TIME ZONE,
+    penalty_start_at TIMESTAMP WITH TIME ZONE,
+    resolved_at TIMESTAMP WITH TIME ZONE,
     penalty_amount_inr NUMERIC(10,2) DEFAULT 0,
-    decline_code TEXT,
-    order_reference TEXT
+    decline_code VARCHAR(255),
+    order_reference VARCHAR(255)
 );
 
 CREATE INDEX idx_transactions_state ON transactions(state);
@@ -31,21 +31,21 @@ CREATE INDEX idx_transactions_beneficiary ON transactions(beneficiary_bank_id);
 CREATE INDEX idx_transactions_created_at ON transactions(created_at);
 
 CREATE TABLE state_transitions (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     txn_id UUID REFERENCES transactions(txn_id),
-    from_state TEXT,
-    to_state TEXT,
-    transitioned_at TIMESTAMPTZ NOT NULL,
-    reason TEXT
+    from_state VARCHAR(50),
+    to_state VARCHAR(50),
+    transitioned_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    reason VARCHAR(1000)
 );
 
 CREATE INDEX idx_state_transitions_txn ON state_transitions(txn_id);
 
 CREATE TABLE webhook_events (
-    id BIGSERIAL PRIMARY KEY,
-    idempotency_key TEXT NOT NULL,
-    payload JSONB,
-    received_at TIMESTAMPTZ NOT NULL,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    idempotency_key VARCHAR(255) NOT NULL,
+    payload CLOB,
+    received_at TIMESTAMP WITH TIME ZONE NOT NULL,
     duplicate_of BIGINT REFERENCES webhook_events(id)
 );
 

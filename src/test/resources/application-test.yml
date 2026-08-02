@@ -1,0 +1,46 @@
+server:
+  port: 0  # random port for tests
+
+spring:
+  application:
+    name: upi-reconcile-test
+
+  # ── H2 in-memory database ──────────────────────────────────────
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none   # Flyway handles schema
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # ── Flyway — use H2-compatible migration ────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration-test
+
+  # ── Disable Redis auto-config ──────────────────────────────────
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  # ── Disable Kafka auto-config ──────────────────────────────────
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+# ── Disable actuator metrics that need Prometheus ──────────────
+management:
+  metrics:
+    export:
+      prometheus:
+        enabled: false
