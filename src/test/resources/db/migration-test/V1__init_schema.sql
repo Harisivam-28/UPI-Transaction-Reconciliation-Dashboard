@@ -22,7 +22,9 @@ CREATE TABLE transactions (
     resolved_at TIMESTAMP WITH TIME ZONE,
     penalty_amount_inr NUMERIC(10,2) DEFAULT 0,
     decline_code VARCHAR(255),
-    order_reference VARCHAR(255)
+    order_reference VARCHAR(255),
+    ml_classification VARCHAR(255),
+    ml_confidence NUMERIC(5,4)
 );
 
 CREATE INDEX idx_transactions_state ON transactions(state);

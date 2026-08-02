@@ -1,54 +1,59 @@
 package com.upi.reconcile.api;
 
+import com.upi.reconcile.domain.TransactionStateChangedEvent;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.io.IOException;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
- * WebSocket handler for live transaction feed — ARCHITECTURE.md §7.
+ * Listens for {@link TransactionStateChangedEvent} (published by the batch
+ * scheduler and processing service) and broadcasts the payload to all
+ * STOMP subscribers on {@code /topic/live-feed}.
  * <p>
- * WS /ws/live-feed
- *   → pushes { txn_id, old_state, new_state, penalty_amount_inr, bank_id } on every transition
- * <p>
- * TODO: Integrate with state machine to broadcast real transitions.
+ * Payload shape per ARCHITECTURE.md §7:
+ * <pre>
+ *   { txn_id, old_state, new_state, penalty_amount_inr, bank_id, timestamp }
+ * </pre>
  */
 @Slf4j
 @Component
-public class LiveFeedWebSocketHandler extends TextWebSocketHandler {
+@RequiredArgsConstructor
+public class LiveFeedWebSocketHandler {
 
-    private final Set<WebSocketSession> sessions = ConcurrentHashMap.newKeySet();
+    private final SimpMessagingTemplate messagingTemplate;
 
-    @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
-        sessions.add(session);
-        log.info("WebSocket client connected: {}", session.getId());
-    }
+    @EventListener
+    public void onStateChange(TransactionStateChangedEvent event) {
+        LiveFeedMessage message = new LiveFeedMessage(
+                event.getTxnId(),
+                event.getFromState() != null ? event.getFromState().name() : null,
+                event.getToState().name(),
+                event.getPenaltyAmountInr(),
+                event.getRemitterBankId(),
+                event.getTransitionedAt()
+        );
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        sessions.remove(session);
-        log.info("WebSocket client disconnected: {}", session.getId());
+        messagingTemplate.convertAndSend("/topic/live-feed", message);
+
+        log.debug("Broadcast state change to /topic/live-feed: {} → {} (txn={})",
+                message.oldState(), message.newState(), message.txnId());
     }
 
     /**
-     * Broadcast a message to all connected clients.
+     * Immutable record for the live-feed JSON payload.
      */
-    public void broadcast(String message) {
-        sessions.forEach(session -> {
-            try {
-                if (session.isOpen()) {
-                    session.sendMessage(new TextMessage(message));
-                }
-            } catch (IOException e) {
-                log.error("Failed to send WebSocket message to {}", session.getId(), e);
-            }
-        });
-    }
+    public record LiveFeedMessage(
+            UUID txnId,
+            String oldState,
+            String newState,
+            BigDecimal penaltyAmountInr,
+            UUID bankId,
+            OffsetDateTime timestamp
+    ) {}
 }
