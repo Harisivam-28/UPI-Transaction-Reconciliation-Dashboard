@@ -45,4 +45,14 @@ public class IdempotencyService {
         redisTemplate.opsForValue().set(KEY_PREFIX + idempotencyKey, txnId, DEFAULT_TTL);
         log.debug("Marked idempotency key {} → txn {}", idempotencyKey, txnId);
     }
+
+    /**
+     * Retrieve the transaction ID cached for a previously-processed key.
+     *
+     * @param idempotencyKey the webhook idempotency key
+     * @return the cached txn ID, or null if not in Redis
+     */
+    public String getExistingTxnId(String idempotencyKey) {
+        return redisTemplate.opsForValue().get(KEY_PREFIX + idempotencyKey);
+    }
 }
