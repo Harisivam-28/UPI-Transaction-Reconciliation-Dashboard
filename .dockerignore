@@ -2,6 +2,7 @@
 .gitignore
 *.md
 ml-service/
+frontend/
 build/
 .gradle/
 .idea/
