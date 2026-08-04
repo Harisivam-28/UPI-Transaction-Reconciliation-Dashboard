@@ -96,6 +96,19 @@ services:
       ml-service:
         condition: service_healthy
 
+  # ── React Frontend (Vite dev server) ────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: upi-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://app:8080
+    depends_on:
+      - app
+
 volumes:
   pgdata:
   kafkadata:
