@@ -5,8 +5,11 @@ import { AnomalyBanner } from './components/AnomalyBanner';
 import { LiveFeed } from './components/LiveFeed';
 import { BankScorecard } from './components/BankScorecard';
 import { TransactionDetail } from './components/TransactionDetail';
+import { GatewayOnboarding } from './components/GatewayOnboarding';
 import { getTransactions } from './api/transactions';
 import type { TransactionDto, PageResponse } from './api/types';
+
+type View = 'onboarding' | 'dashboard';
 
 function App() {
   const { status, liveMessages, anomalies, dismissAnomaly } = useWebSocket();
@@ -16,6 +19,16 @@ function App() {
     totalPenaltyTxns: 0,
     totalTxns: 0,
   });
+
+  // Determine initial view based on whether a gateway has been connected
+  const [view, setView] = useState<View>(() => {
+    return localStorage.getItem('gateway_connected') === 'true' ? 'dashboard' : 'onboarding';
+  });
+
+  const handleGatewayConnected = () => {
+    localStorage.setItem('gateway_connected', 'true');
+    setView('dashboard');
+  };
 
   // Compute hero data from all RESOLVED_REFUNDED transactions
   const fetchHeroData = useCallback(async () => {
@@ -56,15 +69,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetchHeroData();
-  }, [fetchHeroData]);
+    if (view === 'dashboard') {
+      fetchHeroData();
+    }
+  }, [fetchHeroData, view]);
 
   // Refresh hero when new WS messages arrive (debounced)
   useEffect(() => {
-    if (liveMessages.length === 0) return;
+    if (liveMessages.length === 0 || view !== 'dashboard') return;
     const timer = setTimeout(() => fetchHeroData(), 1500);
     return () => clearTimeout(timer);
-  }, [liveMessages.length, fetchHeroData]);
+  }, [liveMessages.length, fetchHeroData, view]);
 
   return (
     <div className="app-container">
@@ -77,44 +92,73 @@ function App() {
             <div className="app-header__subtitle">Automated refund tracking & complaint filing</div>
           </div>
         </div>
-        <div className="app-header__status">
-          <span className={`status-dot ${status !== 'connected' ? 'status-dot--disconnected' : ''}`} />
-          {status === 'connected'
-            ? 'Live'
-            : status === 'connecting'
-            ? 'Connecting…'
-            : 'Disconnected'}
+        <div className="app-header__nav">
+          {localStorage.getItem('gateway_connected') === 'true' && (
+            <>
+              <button
+                className={`nav-link ${view === 'dashboard' ? 'nav-link--active' : ''}`}
+                onClick={() => setView('dashboard')}
+              >
+                Dashboard
+              </button>
+              <button
+                className={`nav-link ${view === 'onboarding' ? 'nav-link--active' : ''}`}
+                onClick={() => setView('onboarding')}
+              >
+                Connections
+              </button>
+            </>
+          )}
+          <div className="app-header__status">
+            <span className={`status-dot ${status !== 'connected' ? 'status-dot--disconnected' : ''}`} />
+            {status === 'connected'
+              ? 'Live'
+              : status === 'connecting'
+              ? 'Connecting…'
+              : 'Disconnected'}
+          </div>
         </div>
       </header>
 
-      {/* ── Anomaly Banners ─────────────────────────────── */}
-      <AnomalyBanner anomalies={anomalies} onDismiss={dismissAnomaly} />
+      {/* ── Onboarding View ─────────────────────────────── */}
+      {view === 'onboarding' && (
+        <GatewayOnboarding onConnected={handleGatewayConnected} />
+      )}
 
-      {/* ── Hero Counter ────────────────────────────────── */}
-      <HeroCounter
-        totalRecovered={heroData.totalRecovered}
-        totalPenaltyTransactions={heroData.totalPenaltyTxns}
-        totalTransactions={heroData.totalTxns}
-      />
+      {/* ── Dashboard View (existing — untouched) ─────── */}
+      {view === 'dashboard' && (
+        <>
+          {/* ── Anomaly Banners ─────────────────────────────── */}
+          <AnomalyBanner anomalies={anomalies} onDismiss={dismissAnomaly} />
 
-      {/* ── Main Grid: Feed + Scorecard ─────────────────── */}
-      <div className="main-grid">
-        <LiveFeed
-          liveMessages={liveMessages}
-          onSelectTransaction={setSelectedTxnId}
-        />
-        <BankScorecard liveMessages={liveMessages} />
-      </div>
+          {/* ── Hero Counter ────────────────────────────────── */}
+          <HeroCounter
+            totalRecovered={heroData.totalRecovered}
+            totalPenaltyTransactions={heroData.totalPenaltyTxns}
+            totalTransactions={heroData.totalTxns}
+          />
 
-      {/* ── Transaction Detail Drawer ───────────────────── */}
-      {selectedTxnId && (
-        <TransactionDetail
-          txnId={selectedTxnId}
-          onClose={() => setSelectedTxnId(null)}
-        />
+          {/* ── Main Grid: Feed + Scorecard ─────────────────── */}
+          <div className="main-grid">
+            <LiveFeed
+              liveMessages={liveMessages}
+              onSelectTransaction={setSelectedTxnId}
+            />
+            <BankScorecard liveMessages={liveMessages} />
+          </div>
+
+          {/* ── Transaction Detail Drawer ───────────────────── */}
+          {selectedTxnId && (
+            <TransactionDetail
+              txnId={selectedTxnId}
+              onClose={() => setSelectedTxnId(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );
 }
 
 export default App;
+
