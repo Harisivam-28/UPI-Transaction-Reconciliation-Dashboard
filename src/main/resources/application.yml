@@ -69,3 +69,13 @@ reconciliation:
   batch-tick-interval-seconds: 7    # ~20/3, mimics 11PM/2AM/5AM batch cadence
   escalation-threshold-days: 2      # demo: T+3
   anomaly-window-seconds: 60        # §5: rolling window for failure-rate computation
+
+# ── Connectors Module ─────────────────────────────────────
+app:
+  encryption:
+    # Base64-encoded 256-bit AES key (DEV ONLY — use env var / secrets manager in production)
+    aes-key: JroH8+vWHFtReNnvTAPNMbTO/KLvJ678oafYsBh4H5A=
+  connectors:
+    # Default bank UUIDs for gateway connectors (deterministic from BankSeedRunner)
+    default-remitter-bank-id: c95b6b0c-4fa4-3d02-aa0e-91ecd5dc0465     # State Bank of India
+    default-beneficiary-bank-id: a362b32a-1ca2-3f58-b9f2-ad5e9dd64b77  # HDFC Bank Ltd.

@@ -52,3 +52,17 @@ CREATE TABLE webhook_events (
 );
 
 CREATE INDEX idx_webhook_events_idempotency ON webhook_events(idempotency_key);
+
+-- Merchants table for payment gateway connectors
+CREATE TABLE merchants (
+    merchant_id         UUID PRIMARY KEY,
+    name                VARCHAR(255) NOT NULL,
+    connected_gateway   VARCHAR(50) NOT NULL,
+    encrypted_api_key   VARCHAR(1000) NOT NULL,
+    encrypted_api_secret VARCHAR(1000) NOT NULL,
+    webhook_secret      VARCHAR(500),
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX idx_merchants_gateway ON merchants(connected_gateway);
+

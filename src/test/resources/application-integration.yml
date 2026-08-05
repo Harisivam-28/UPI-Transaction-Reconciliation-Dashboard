@@ -46,3 +46,12 @@ reconciliation:
 
 ml-service:
   base-url: http://localhost:9999   # not used in this test
+
+# ── Connectors Module ─────────────────────────────────────────
+app:
+  encryption:
+    aes-key: JroH8+vWHFtReNnvTAPNMbTO/KLvJ678oafYsBh4H5A=
+  connectors:
+    default-remitter-bank-id: 00000000-0000-0000-0000-000000000001
+    default-beneficiary-bank-id: 00000000-0000-0000-0000-000000000002
+
