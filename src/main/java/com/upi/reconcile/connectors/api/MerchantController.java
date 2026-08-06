@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.SecureRandom;
 import java.time.OffsetDateTime;
+import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,9 +24,13 @@ import java.util.UUID;
  * <pre>
  * POST /api/merchants/connect
  *   body: { gateway, api_key, api_secret, name? }
- *   → 200 { merchant_id, webhook_url }
+ *   → 200 { merchant_id, webhook_url, webhook_secret }
  * </pre>
  *
+ * <p>A cryptographically secure 32-byte webhook secret is auto-generated at
+ * connection time, stored on the Merchant entity, and returned once in the
+ * response. The merchant must copy this secret into their gateway's webhook
+ * configuration form for HMAC-SHA256 signature verification.
  * <p>Encrypts the merchant's API key and secret using AES-256-GCM before
  * persisting to the {@code merchants} table, then returns a webhook URL
  * the merchant should register with their payment gateway dashboard.
@@ -36,6 +42,7 @@ import java.util.UUID;
 public class MerchantController {
 
     private static final Set<String> SUPPORTED_GATEWAYS = Set.of("razorpay", "payu", "cashfree");
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final MerchantRepository merchantRepository;
     private final AesGcmEncryptor encryptor;
@@ -58,12 +65,18 @@ public class MerchantController {
         String encryptedApiKey = encryptor.encrypt(request.getApiKey());
         String encryptedApiSecret = encryptor.encrypt(request.getApiSecret());
 
+        // Generate a cryptographically secure 32-byte webhook secret
+        byte[] secretBytes = new byte[32];
+        SECURE_RANDOM.nextBytes(secretBytes);
+        String webhookSecret = HexFormat.of().formatHex(secretBytes);
+
         Merchant merchant = Merchant.builder()
                 .merchantId(merchantId)
                 .name(name)
                 .connectedGateway(gateway)
                 .encryptedApiKey(encryptedApiKey)
                 .encryptedApiSecret(encryptedApiSecret)
+                .webhookSecret(webhookSecret)
                 .createdAt(OffsetDateTime.now())
                 .build();
         merchantRepository.save(merchant);
@@ -77,6 +90,7 @@ public class MerchantController {
         MerchantConnectResponse response = MerchantConnectResponse.builder()
                 .merchantId(merchantId)
                 .webhookUrl(webhookUrl)
+                .webhookSecret(webhookSecret)
                 .build();
 
         return ResponseEntity.ok(response);

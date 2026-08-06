@@ -10,6 +10,7 @@ export interface MerchantConnectRequest {
 export interface MerchantConnectResponse {
   merchantId: string;
   webhookUrl: string;
+  webhookSecret: string;
 }
 
 export function connectMerchant(

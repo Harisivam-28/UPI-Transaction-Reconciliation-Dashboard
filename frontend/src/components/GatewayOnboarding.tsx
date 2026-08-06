@@ -40,16 +40,10 @@ const GATEWAYS: GatewayInfo[] = [
   },
 ];
 
-const GATEWAY_INSTRUCTIONS: Record<GatewayId, string> = {
-  razorpay: 'Paste this into your Razorpay Dashboard → Settings → Webhooks.',
-  payu: 'Paste this into your PayU Dashboard → Settings → Webhooks.',
-  cashfree: 'Paste this into your Cashfree Dashboard → Settings → Webhooks.',
-};
-
 type Step = 'choose' | 'form' | 'success';
 
 /**
- * Gateway onboarding flow — card-based chooser → credentials form → success with webhook URL.
+ * Gateway onboarding flow — card-based chooser → credentials form → success with webhook URL + secret.
  * Matches the existing dashboard design system.
  */
 export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
@@ -60,7 +54,8 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MerchantConnectResponse | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   const handleSelectGateway = (gw: GatewayInfo) => {
     setSelectedGateway(gw);
@@ -101,22 +96,19 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
     }
   };
 
-  const handleCopyWebhookUrl = async () => {
-    if (!result) return;
+  const copyToClipboard = async (text: string, setCopied: (v: boolean) => void) => {
     try {
-      await navigator.clipboard.writeText(window.location.origin + result.webhookUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      await navigator.clipboard.writeText(text);
     } catch {
       const ta = document.createElement('textarea');
-      ta.value = window.location.origin + result.webhookUrl;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
@@ -228,7 +220,7 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
         </div>
       )}
 
-      {/* ── Step 3: Success — Webhook URL ────────────────── */}
+      {/* ── Step 3: Success — Webhook URL + Secret ────────── */}
       {step === 'success' && selectedGateway && result && (
         <div className="onboarding__success-wrapper">
           <div className="onboarding__success-card">
@@ -237,12 +229,13 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
               {selectedGateway.name} Connected!
             </h3>
             <p className="onboarding__success-subtitle">
-              Your webhook URL is ready. Register it with your gateway to start receiving
-              transaction events.
+              Copy both values below into your gateway's webhook settings to start
+              receiving signed transaction events.
             </p>
 
+            {/* Webhook URL */}
             <div className="onboarding__webhook-section">
-              <span className="onboarding__field-label">Your Webhook URL</span>
+              <span className="onboarding__field-label">Webhook URL</span>
               <div className="onboarding__webhook-url-row">
                 <code className="onboarding__webhook-url">
                   {window.location.origin}{result.webhookUrl}
@@ -250,15 +243,35 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
                 <button
                   id="btn-copy-webhook-url"
                   className="btn-secondary"
-                  onClick={handleCopyWebhookUrl}
+                  onClick={() => copyToClipboard(window.location.origin + result.webhookUrl, setCopiedUrl)}
                 >
-                  {copied ? '✓ Copied!' : '📋 Copy'}
+                  {copiedUrl ? '✓ Copied!' : '📋 Copy'}
                 </button>
               </div>
-              <p className="onboarding__webhook-instructions">
-                {GATEWAY_INSTRUCTIONS[selectedGateway.id]}
-              </p>
             </div>
+
+            {/* Webhook Secret */}
+            <div className="onboarding__webhook-section">
+              <span className="onboarding__field-label">Webhook Secret</span>
+              <div className="onboarding__webhook-url-row">
+                <code className="onboarding__webhook-url">
+                  {result.webhookSecret}
+                </code>
+                <button
+                  id="btn-copy-webhook-secret"
+                  className="btn-secondary"
+                  onClick={() => copyToClipboard(result.webhookSecret, setCopiedSecret)}
+                >
+                  {copiedSecret ? '✓ Copied!' : '📋 Copy'}
+                </button>
+              </div>
+            </div>
+
+            <p className="onboarding__webhook-instructions">
+              Paste the Webhook URL into {selectedGateway.name} Dashboard → Settings → Webhooks,
+              and paste the Webhook Secret into the same form's "Secret" field — this is required
+              for {selectedGateway.name} to sign requests and for us to verify them.
+            </p>
 
             <button
               id="btn-go-to-dashboard"
@@ -273,3 +286,4 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
     </div>
   );
 }
+

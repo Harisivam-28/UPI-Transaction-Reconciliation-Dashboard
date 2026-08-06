@@ -2,6 +2,8 @@ package com.upi.reconcile.connectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upi.reconcile.api.WebhookResponse;
+import com.upi.reconcile.connectors.crypto.HmacSignatureVerifier;
+import com.upi.reconcile.connectors.domain.Merchant;
 import com.upi.reconcile.connectors.domain.MerchantRepository;
 import com.upi.reconcile.domain.Bank;
 import com.upi.reconcile.domain.BankRepository;
@@ -30,6 +32,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -106,6 +109,7 @@ class ConnectorPipelineIntegrationTest {
 
     private static final UUID REMITTER_BANK_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID BENEFICIARY_BANK_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final String TEST_WEBHOOK_SECRET = "whsec_test_secret_for_hmac_verification";
 
     @BeforeEach
     void setUp() {
@@ -136,13 +140,32 @@ class ConnectorPipelineIntegrationTest {
         }
     }
 
+    /**
+     * Creates a test merchant with a webhook secret for Razorpay signature tests.
+     */
+    private UUID createTestMerchant() {
+        UUID merchantId = UUID.randomUUID();
+        merchantRepository.save(Merchant.builder()
+                .merchantId(merchantId)
+                .name("Test Merchant")
+                .connectedGateway("razorpay")
+                .encryptedApiKey("encrypted_key")
+                .encryptedApiSecret("encrypted_secret")
+                .webhookSecret(TEST_WEBHOOK_SECRET)
+                .createdAt(OffsetDateTime.now())
+                .build());
+        return merchantId;
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // Razorpay — payment.captured (SUCCESS)
     // ═══════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("Razorpay payment.captured webhook → transaction in SUCCESS state")
+    @DisplayName("Razorpay payment.captured webhook with valid HMAC → transaction in SUCCESS state")
     void razorpayPaymentCaptured_createsSuccessTransaction() throws Exception {
+
+        UUID merchantId = createTestMerchant();
 
         // Build a real-shaped Razorpay test-mode webhook payload
         String paymentId = "pay_TEST" + UUID.randomUUID().toString().replace("-", "").substring(0, 14);
@@ -159,9 +182,12 @@ class ConnectorPipelineIntegrationTest {
         );
 
         String json = objectMapper.writeValueAsString(razorpayPayload);
+        String signature = HmacSignatureVerifier.computeHmac(json, TEST_WEBHOOK_SECRET);
 
-        // POST to the Razorpay connector endpoint
+        // POST to the Razorpay connector endpoint with valid signature
         MvcResult result = mockMvc.perform(post("/api/connectors/razorpay/webhook")
+                        .param("merchant_id", merchantId.toString())
+                        .header("X-Razorpay-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -189,9 +215,10 @@ class ConnectorPipelineIntegrationTest {
     // ═══════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("Razorpay payment.failed with BAD_REQUEST_ERROR → BUSINESS_DECLINED")
+    @DisplayName("Razorpay payment.failed with BAD_REQUEST_ERROR + valid HMAC → BUSINESS_DECLINED")
     void razorpayPaymentFailed_bdError_createsBusinessDeclinedTransaction() throws Exception {
 
+        UUID merchantId = createTestMerchant();
         String paymentId = "pay_FAIL" + UUID.randomUUID().toString().replace("-", "").substring(0, 14);
 
         Map<String, Object> razorpayPayload = buildRazorpayPayload(
@@ -205,8 +232,11 @@ class ConnectorPipelineIntegrationTest {
         );
 
         String json = objectMapper.writeValueAsString(razorpayPayload);
+        String signature = HmacSignatureVerifier.computeHmac(json, TEST_WEBHOOK_SECRET);
 
         mockMvc.perform(post("/api/connectors/razorpay/webhook")
+                        .param("merchant_id", merchantId.toString())
+                        .header("X-Razorpay-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -224,9 +254,10 @@ class ConnectorPipelineIntegrationTest {
     // ═══════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("Razorpay payment.failed with GATEWAY_ERROR → TECHNICAL_DECLINED")
+    @DisplayName("Razorpay payment.failed with GATEWAY_ERROR + valid HMAC → TECHNICAL_DECLINED")
     void razorpayPaymentFailed_tdError_createsTechnicalDeclinedTransaction() throws Exception {
 
+        UUID merchantId = createTestMerchant();
         String paymentId = "pay_GWERR" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 
         Map<String, Object> razorpayPayload = buildRazorpayPayload(
@@ -240,8 +271,11 @@ class ConnectorPipelineIntegrationTest {
         );
 
         String json = objectMapper.writeValueAsString(razorpayPayload);
+        String signature = HmacSignatureVerifier.computeHmac(json, TEST_WEBHOOK_SECRET);
 
         mockMvc.perform(post("/api/connectors/razorpay/webhook")
+                        .param("merchant_id", merchantId.toString())
+                        .header("X-Razorpay-Signature", signature)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isOk())
@@ -252,6 +286,57 @@ class ConnectorPipelineIntegrationTest {
         Transaction txn = transactionRepository.findAll().get(0);
         assertThat(txn.getIdempotencyKey()).isEqualTo(paymentId);
         assertThat(txn.getDeclineCode()).isEqualTo("MALFORMED_BANK_ID");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Razorpay — HMAC signature rejection tests
+    // ═══════════════════════════════════════════════════════════════
+
+    @Test
+    @DisplayName("Razorpay webhook without X-Razorpay-Signature → 401 Unauthorized")
+    void razorpayWebhook_missingSignature_returns401() throws Exception {
+
+        UUID merchantId = createTestMerchant();
+
+        Map<String, Object> razorpayPayload = buildRazorpayPayload(
+                "payment.captured", "pay_NOSIG001", 10000, "captured",
+                "order_NOSIG", null, null);
+        String json = objectMapper.writeValueAsString(razorpayPayload);
+
+        // No X-Razorpay-Signature header → should be rejected
+        mockMvc.perform(post("/api/connectors/razorpay/webhook")
+                        .param("merchant_id", merchantId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+
+        // No transaction should have been created
+        assertThat(transactionRepository.count()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("Razorpay webhook with wrong signature → 401 Unauthorized")
+    void razorpayWebhook_wrongSignature_returns401() throws Exception {
+
+        UUID merchantId = createTestMerchant();
+
+        Map<String, Object> razorpayPayload = buildRazorpayPayload(
+                "payment.captured", "pay_BADSIG001", 10000, "captured",
+                "order_BADSIG", null, null);
+        String json = objectMapper.writeValueAsString(razorpayPayload);
+
+        // Compute HMAC with a wrong secret → should be rejected
+        String wrongSignature = HmacSignatureVerifier.computeHmac(json, "wrong_secret_entirely");
+
+        mockMvc.perform(post("/api/connectors/razorpay/webhook")
+                        .param("merchant_id", merchantId.toString())
+                        .header("X-Razorpay-Signature", wrongSignature)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+
+        // No transaction should have been created
+        assertThat(transactionRepository.count()).isEqualTo(0);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -307,7 +392,7 @@ class ConnectorPipelineIntegrationTest {
     // ═══════════════════════════════════════════════════════════════
 
     @Test
-    @DisplayName("POST /api/merchants/connect stores encrypted credentials and returns webhook_url")
+    @DisplayName("POST /api/merchants/connect stores encrypted credentials and returns webhook_url + webhook_secret")
     void merchantConnect_storesEncryptedCredentials() throws Exception {
 
         Map<String, Object> connectRequest = new LinkedHashMap<>();
@@ -324,7 +409,15 @@ class ConnectorPipelineIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.merchantId").exists())
                 .andExpect(jsonPath("$.webhookUrl").exists())
+                .andExpect(jsonPath("$.webhookSecret").exists())
                 .andReturn();
+
+        // Verify webhook_secret is a 64-character hex string (32 bytes)
+        String responseBody = result.getResponse().getContentAsString();
+        var responseMap = objectMapper.readValue(responseBody, Map.class);
+        String webhookSecret = (String) responseMap.get("webhookSecret");
+        assertThat(webhookSecret).hasSize(64);
+        assertThat(webhookSecret).matches("[0-9a-f]{64}");
 
         // Verify merchant was persisted
         assertThat(merchantRepository.count()).isEqualTo(1);
@@ -335,6 +428,9 @@ class ConnectorPipelineIntegrationTest {
         assertThat(merchant.getEncryptedApiSecret()).isNotEqualTo("secret_test_abcdef");
         assertThat(merchant.getConnectedGateway()).isEqualTo("razorpay");
         assertThat(merchant.getName()).isEqualTo("Test Merchant");
+
+        // Verify webhook_secret was stored on the entity and matches the response
+        assertThat(merchant.getWebhookSecret()).isEqualTo(webhookSecret);
     }
 
     // ═══════════════════════════════════════════════════════════════
