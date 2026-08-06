@@ -76,6 +76,6 @@ app:
     # Base64-encoded 256-bit AES key (DEV ONLY — use env var / secrets manager in production)
     aes-key: JroH8+vWHFtReNnvTAPNMbTO/KLvJ678oafYsBh4H5A=
   connectors:
-    # Default bank UUIDs for gateway connectors (deterministic from BankSeedRunner)
-    default-remitter-bank-id: c95b6b0c-4fa4-3d02-aa0e-91ecd5dc0465     # State Bank of India
-    default-beneficiary-bank-id: a362b32a-1ca2-3f58-b9f2-ad5e9dd64b77  # HDFC Bank Ltd.
+    # Default bank UUIDs for gateway connectors (must match banks seeded by BankSeedRunner)
+    default-remitter-bank-id: a362b32a-1ca2-3f58-b9f2-ad5e9dd64b77     # HDFC Bank Ltd.
+    default-beneficiary-bank-id: 08fe9ca5-0508-3912-936d-f22c31463329   # ICICI Bank Ltd.

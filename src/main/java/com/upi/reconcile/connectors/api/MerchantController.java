@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -94,5 +96,23 @@ public class MerchantController {
                 .build();
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Returns the list of gateway names that have at least one connected merchant.
+     * Used by the frontend to show "Already Connected" badges.
+     *
+     * <pre>
+     * GET /api/merchants/connected-gateways
+     *   → 200 ["razorpay", "payu"]
+     * </pre>
+     */
+    @GetMapping("/connected-gateways")
+    public ResponseEntity<List<String>> getConnectedGateways() {
+        List<String> gateways = merchantRepository.findAll().stream()
+                .map(Merchant::getConnectedGateway)
+                .distinct()
+                .toList();
+        return ResponseEntity.ok(gateways);
     }
 }

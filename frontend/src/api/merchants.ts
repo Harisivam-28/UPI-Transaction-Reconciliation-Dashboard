@@ -21,3 +21,7 @@ export function connectMerchant(
     body: JSON.stringify(request),
   });
 }
+
+export function getConnectedGateways(): Promise<string[]> {
+  return apiFetch<string[]>('/merchants/connected-gateways');
+}

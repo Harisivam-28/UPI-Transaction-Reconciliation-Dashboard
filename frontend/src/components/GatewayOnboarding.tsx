@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { connectMerchant } from '../api/merchants';
+import { useState, useEffect } from 'react';
+import { connectMerchant, getConnectedGateways } from '../api/merchants';
 import type { MerchantConnectResponse } from '../api/merchants';
 
 interface GatewayOnboardingProps {
@@ -56,6 +56,14 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
   const [result, setResult] = useState<MerchantConnectResponse | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [connectedGateways, setConnectedGateways] = useState<Set<string>>(new Set());
+
+  // Fetch already-connected gateways on mount
+  useEffect(() => {
+    getConnectedGateways()
+      .then((gws) => setConnectedGateways(new Set(gws)))
+      .catch(() => {}); // silently ignore — empty set is fine
+  }, []);
 
   const handleSelectGateway = (gw: GatewayInfo) => {
     setSelectedGateway(gw);
@@ -88,6 +96,7 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
         apiSecret: apiSecret.trim(),
       });
       setResult(response);
+      setConnectedGateways((prev) => new Set([...prev, selectedGateway.id]));
       setStep('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Connection failed. Please try again.');
@@ -123,27 +132,46 @@ export function GatewayOnboarding({ onConnected }: GatewayOnboardingProps) {
             </p>
           </div>
           <div className="onboarding__cards">
-            {GATEWAYS.map((gw) => (
-              <button
-                key={gw.id}
-                id={`gateway-card-${gw.id}`}
-                className="gateway-card"
-                onClick={() => handleSelectGateway(gw)}
-              >
-                <div className="gateway-card__icon">{gw.icon}</div>
-                <div className="gateway-card__content">
-                  <div className="gateway-card__name-row">
-                    <span className="gateway-card__name">{gw.name}</span>
-                    {gw.isSandbox && (
-                      <span className="gateway-card__sandbox-badge">Sandbox</span>
-                    )}
+            {GATEWAYS.map((gw) => {
+              const isConnected = connectedGateways.has(gw.id);
+              return (
+                <button
+                  key={gw.id}
+                  id={`gateway-card-${gw.id}`}
+                  className={`gateway-card${isConnected ? ' gateway-card--connected' : ''}`}
+                  onClick={() => !isConnected && handleSelectGateway(gw)}
+                  disabled={isConnected}
+                >
+                  <div className="gateway-card__icon">{gw.icon}</div>
+                  <div className="gateway-card__content">
+                    <div className="gateway-card__name-row">
+                      <span className="gateway-card__name">{gw.name}</span>
+                      {isConnected && (
+                        <span className="gateway-card__connected-badge">Connected ✓</span>
+                      )}
+                      {!isConnected && gw.isSandbox && (
+                        <span className="gateway-card__sandbox-badge">Sandbox</span>
+                      )}
+                    </div>
+                    <p className="gateway-card__desc">{gw.description}</p>
                   </div>
-                  <p className="gateway-card__desc">{gw.description}</p>
-                </div>
-                <div className="gateway-card__arrow">→</div>
-              </button>
-            ))}
+                  {!isConnected && <div className="gateway-card__arrow">→</div>}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Show "Go to Dashboard" if at least one gateway is already connected */}
+          {connectedGateways.size > 0 && (
+            <button
+              id="btn-skip-to-dashboard"
+              className="btn-primary btn-primary--full"
+              style={{ marginTop: '1.5rem' }}
+              onClick={onConnected}
+            >
+              Go to Dashboard →
+            </button>
+          )}
         </div>
       )}
 
