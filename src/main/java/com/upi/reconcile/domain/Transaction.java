@@ -82,4 +82,8 @@ public class Transaction {
     /** Model confidence score for the predicted classification (0.0 - 1.0). */
     @Column(name = "ml_confidence", precision = 5, scale = 4)
     private BigDecimal mlConfidence;
+
+    /** Which connector created this transaction (razorpay, payu, cashfree). Null for generic webhooks. */
+    @Column(name = "source_gateway")
+    private String sourceGateway;
 }

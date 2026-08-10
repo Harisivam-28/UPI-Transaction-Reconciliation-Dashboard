@@ -173,6 +173,7 @@ public class ConnectorWebhookController {
 
         // 1. Normalize the raw payload into internal schema
         WebhookRequest normalized = connector.normalizeWebhookPayload(rawPayload);
+        normalized.setSourceGateway(gatewayName);
 
         log.info("Normalized {} webhook — idempotency_key={}", gatewayName, normalized.getIdempotencyKey());
 

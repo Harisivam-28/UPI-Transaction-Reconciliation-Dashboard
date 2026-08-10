@@ -912,6 +912,27 @@ body {
   margin-top: 4px;
 }
 
+.timeline-item__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.timeline-item__badge--gateway {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+  color: #8b5cf6;
+}
+
+.timeline-item__badge--batch {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

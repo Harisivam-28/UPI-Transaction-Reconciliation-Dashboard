@@ -190,6 +190,12 @@ export function TransactionDetail({ txnId, onClose }: TransactionDetailProps) {
                         </div>
                         {step.reason && (
                           <div className="timeline-item__reason">
+                            {(step.reason.includes('via Razorpay') || step.reason.includes('via gateway')) && (
+                              <span className="timeline-item__badge timeline-item__badge--gateway">⚡ Gateway Action</span>
+                            )}
+                            {(step.reason.includes('Batch auto-reversal') || step.reason.includes('batch')) && (
+                              <span className="timeline-item__badge timeline-item__badge--batch">📦 NPCI Batch</span>
+                            )}
                             {step.reason}
                           </div>
                         )}

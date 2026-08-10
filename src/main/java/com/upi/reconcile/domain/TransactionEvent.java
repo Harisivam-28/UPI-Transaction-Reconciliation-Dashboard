@@ -37,5 +37,11 @@ public enum TransactionEvent {
     RESOLUTION_ARRIVED,
 
     /** Exceeds escalation threshold with no resolution (PENALTY_ACCRUING → ESCALATED). */
-    ESCALATION_THRESHOLD_HIT;
+    ESCALATION_THRESHOLD_HIT,
+
+    /** Gateway API confirms payment actually succeeded (PENALTY_ACCRUING → SUCCESS). */
+    GATEWAY_STATUS_CHECK_SUCCESS,
+
+    /** Gateway refund API call succeeded (PENALTY_ACCRUING → RESOLVED_REFUNDED). */
+    GATEWAY_REFUND_COMPLETED;
 }

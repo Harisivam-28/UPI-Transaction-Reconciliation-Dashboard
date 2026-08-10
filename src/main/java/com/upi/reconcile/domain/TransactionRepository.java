@@ -31,6 +31,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
 
     List<Transaction> findByState(TransactionState state);
 
+    List<Transaction> findByStateAndSourceGateway(TransactionState state, String sourceGateway);
+
     List<Transaction> findByStateIn(Collection<TransactionState> states);
 
     List<Transaction> findByRemitterBank_BankId(UUID bankId);
