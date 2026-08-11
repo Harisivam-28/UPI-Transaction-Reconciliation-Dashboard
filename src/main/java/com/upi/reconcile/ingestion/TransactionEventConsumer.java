@@ -105,10 +105,13 @@ public class TransactionEventConsumer {
             String declineCode = json.has("declineCode") && !json.get("declineCode").isNull()
                     ? json.get("declineCode").asText()
                     : null;
+            String sourceGateway = json.has("sourceGateway") && !json.get("sourceGateway").isNull()
+                    ? json.get("sourceGateway").asText()
+                    : null;
 
             Transaction txn = transactionProcessingService.processNewTransaction(
                     idempotencyKey, remitterBankId, beneficiaryBankId,
-                    amountInr, orderReference, declineCode);
+                    amountInr, orderReference, declineCode, sourceGateway);
 
             // Mark in Redis for fast-path on subsequent duplicates
             idempotencyService.markProcessed(idempotencyKey, txn.getTxnId().toString());

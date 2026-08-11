@@ -79,6 +79,9 @@ services:
     container_name: upi-app
     ports:
       - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/upi_reconcile
       SPRING_DATASOURCE_USERNAME: postgres
@@ -86,6 +89,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       ML_SERVICE_BASE_URL: http://ml-service:8000
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true"
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +99,19 @@ services:
         condition: service_healthy
       ml-service:
         condition: service_healthy
+
+  # ── React Frontend (Vite dev server) ────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: upi-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://app:8080
+    depends_on:
+      - app
 
 volumes:
   pgdata:

@@ -29,8 +29,10 @@ import java.util.Map;
  * PENDING_RECONCILIATION + BATCH_RESOLVED           → AUTO_REVERSED
  * PENDING_RECONCILIATION + DEADLINE_PASSED          → TAT_BREACHED
  * TAT_BREACHED          + DEADLINE_PASSED           → PENALTY_ACCRUING
- * PENALTY_ACCRUING      + RESOLUTION_ARRIVED        → RESOLVED_REFUNDED
- * PENALTY_ACCRUING      + ESCALATION_THRESHOLD_HIT  → ESCALATED
+ * PENALTY_ACCRUING      + RESOLUTION_ARRIVED              → RESOLVED_REFUNDED
+ * PENALTY_ACCRUING      + ESCALATION_THRESHOLD_HIT        → ESCALATED
+ * PENALTY_ACCRUING      + GATEWAY_STATUS_CHECK_SUCCESS    → SUCCESS
+ * PENALTY_ACCRUING      + GATEWAY_REFUND_COMPLETED        → RESOLVED_REFUNDED
  * </pre>
  */
 @Service
@@ -75,10 +77,12 @@ public class StateMachine {
         tatBreached.put(TransactionEvent.DEADLINE_PASSED, TransactionState.PENALTY_ACCRUING);
         table.put(TransactionState.TAT_BREACHED, Collections.unmodifiableMap(tatBreached));
 
-        // PENALTY_ACCRUING → 2 possible events
+        // PENALTY_ACCRUING → 4 possible events (simulated + gateway-driven)
         var penaltyAccruing = new EnumMap<TransactionEvent, TransactionState>(TransactionEvent.class);
-        penaltyAccruing.put(TransactionEvent.RESOLUTION_ARRIVED,       TransactionState.RESOLVED_REFUNDED);
-        penaltyAccruing.put(TransactionEvent.ESCALATION_THRESHOLD_HIT, TransactionState.ESCALATED);
+        penaltyAccruing.put(TransactionEvent.RESOLUTION_ARRIVED,              TransactionState.RESOLVED_REFUNDED);
+        penaltyAccruing.put(TransactionEvent.ESCALATION_THRESHOLD_HIT,        TransactionState.ESCALATED);
+        penaltyAccruing.put(TransactionEvent.GATEWAY_STATUS_CHECK_SUCCESS,    TransactionState.SUCCESS);
+        penaltyAccruing.put(TransactionEvent.GATEWAY_REFUND_COMPLETED,        TransactionState.RESOLVED_REFUNDED);
         table.put(TransactionState.PENALTY_ACCRUING, Collections.unmodifiableMap(penaltyAccruing));
 
         TRANSITIONS = Collections.unmodifiableMap(table);

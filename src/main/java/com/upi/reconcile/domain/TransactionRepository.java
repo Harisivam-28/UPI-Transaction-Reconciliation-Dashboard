@@ -1,5 +1,9 @@
 package com.upi.reconcile.domain;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -13,13 +17,28 @@ import java.util.UUID;
 public interface TransactionRepository extends JpaRepository<Transaction, UUID>,
         JpaSpecificationExecutor<Transaction> {
 
+    // ── Eagerly-fetched overrides (fix LazyInitializationException) ───────
+
+    @Override
+    @EntityGraph(attributePaths = {"remitterBank", "beneficiaryBank"})
+    List<Transaction> findAll();
+
+    @Override
+    @EntityGraph(attributePaths = {"remitterBank", "beneficiaryBank"})
+    Page<Transaction> findAll(Specification<Transaction> spec, Pageable pageable);
+
+    // ── Existing query methods ───────────────────────────────────────────
+
     List<Transaction> findByState(TransactionState state);
+
+    List<Transaction> findByStateAndSourceGateway(TransactionState state, String sourceGateway);
 
     List<Transaction> findByStateIn(Collection<TransactionState> states);
 
     List<Transaction> findByRemitterBank_BankId(UUID bankId);
 
     List<Transaction> findByBeneficiaryBank_BankId(UUID bankId);
+
 
     // ── Anomaly monitor queries (§5) ─────────────────────────────────────
 

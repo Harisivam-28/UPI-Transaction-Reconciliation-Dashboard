@@ -1,6 +1,7 @@
 package com.upi.reconcile.scheduler;
 
 import com.upi.reconcile.config.TimeCompressionConfig;
+import com.upi.reconcile.connectors.GatewayResolutionService;
 import com.upi.reconcile.domain.Bank;
 import com.upi.reconcile.domain.StateMachine;
 import com.upi.reconcile.domain.StateTransition;
@@ -54,11 +55,15 @@ public class BatchResolutionScheduler {
     private final TimeCompressionConfig timeConfig;
     private final ApplicationEventPublisher eventPublisher;
     private final MlClassificationService mlClassificationService;
+    private final GatewayResolutionService gatewayResolutionService;
 
     @Scheduled(fixedDelayString = "${reconciliation.batch-tick-interval-seconds:7}000")
     public void runBatchResolution() {
         OffsetDateTime now = OffsetDateTime.now();
         log.info("⏰ Batch resolution tick at {}", now);
+
+        // Sweep 0: Gateway-driven resolution (real API calls for Razorpay txns)
+        gatewayResolutionService.resolveRazorpayTransactions(now);
 
         sweepResolution(now);
         sweepTatBreach(now);

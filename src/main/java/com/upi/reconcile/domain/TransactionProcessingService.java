@@ -57,7 +57,8 @@ public class TransactionProcessingService {
                                              UUID beneficiaryBankId,
                                              BigDecimal amountInr,
                                              String orderReference,
-                                             String declineCode) {
+                                             String declineCode,
+                                             String sourceGateway) {
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -82,6 +83,7 @@ public class TransactionProcessingService {
                 .penaltyStartAt(now.plusSeconds(timeConfig.getPenaltyStartSeconds()))
                 .declineCode(declineCode)
                 .orderReference(orderReference)
+                .sourceGateway(sourceGateway)
                 .build();
         transactionRepository.save(txn);
 

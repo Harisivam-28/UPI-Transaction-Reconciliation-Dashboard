@@ -126,3 +126,25 @@ chmod +x gradlew
 
 Prometheus metrics are exposed at `/actuator/prometheus`. Connect your Prometheus instance
 to `http://localhost:8080/actuator/prometheus` for scraping.
+
+
+#UI-C with solved backend
+
+    issue:
+        One backend issue
+The REST endpoints (/api/transactions, /api/banks/scorecard) return 500 errors due to a pre-existing JPA LazyInitializationException — the backend's toDto() method accesses lazy-loaded entity relations (remitterBank.getName()) with open-in-view: false. The frontend handles this gracefully with empty states. Once the backend's lazy loading is fixed (e.g., by adding JOIN FETCH to the repository query or using @EntityGraph), the data will flow through correctly.
+
+Frontend is running at http://localhost:5173/
+
+    after solved:
+        Everything is now fully working:
+
+✅ WebSocket STOMP connected — header shows "Live" with pulsing green dot
+✅ GET /api/transactions — returns 200 (was 500, fixed with @EntityGraph)
+✅ GET /api/banks/scorecard — returns 200 with real bank seed data (Airtel, Axis, Canara, HDFC, ICICI, etc.)
+✅ No CORS errors — WebCorsConfig properly scoped to localhost:5173
+✅ Bank scorecard rendering — 10+ banks displayed with reliability bars
+The key fix was adding @EntityGraph(attributePaths = {"remitterBank", "beneficiaryBank"}) to the repository's findAll() methods — the open-in-view: false setting meant lazy-loaded bank relationships threw LazyInitializationException when the controller tried to access them outside the transaction boundary.
+
+The dashboard is live at http://localhost:5173/ — send a webhook to POST /api/webhooks/transaction to see live transactions flow through with real-time WebSocket updates, TAT countdown timers, and state badges.
+
