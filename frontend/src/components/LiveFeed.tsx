@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { TransactionDto, PageResponse, LiveFeedMessage } from '../api/types';
 import { getTransactions } from '../api/transactions';
-import { StateBadge } from './StateBadge';
 import { TransactionRow } from './TransactionRow';
 
 interface LiveFeedProps {

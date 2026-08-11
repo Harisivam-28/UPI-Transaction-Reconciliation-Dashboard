@@ -38,6 +38,9 @@ public class Transaction {
     @Column(name = "idempotency_key", unique = true, nullable = false)
     private String idempotencyKey;
 
+    @Column(name = "merchant_id")
+    private UUID merchantId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "remitter_bank_id")
     private Bank remitterBank;

@@ -9,7 +9,7 @@ export function useCountdown(deadline: string | null | undefined): number | null
   const [remaining, setRemaining] = useState<number | null>(() =>
     secondsUntil(deadline)
   );
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
   useEffect(() => {
     if (!deadline) {

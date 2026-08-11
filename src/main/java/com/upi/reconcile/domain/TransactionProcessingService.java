@@ -58,7 +58,8 @@ public class TransactionProcessingService {
                                              BigDecimal amountInr,
                                              String orderReference,
                                              String declineCode,
-                                             String sourceGateway) {
+                                             String sourceGateway,
+                                             UUID merchantId) {
 
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -84,6 +85,7 @@ public class TransactionProcessingService {
                 .declineCode(declineCode)
                 .orderReference(orderReference)
                 .sourceGateway(sourceGateway)
+                .merchantId(merchantId)
                 .build();
         transactionRepository.save(txn);
 

@@ -45,6 +45,7 @@ class LiveFeedWebSocketTest {
                 new BigDecimal("200.00"),
                 BANK_ID,
                 BENEFICIARY_ID,
+                null,
                 TIMESTAMP
         );
 
@@ -75,7 +76,8 @@ class LiveFeedWebSocketTest {
                 BigDecimal.ZERO,
                 BANK_ID,
                 BENEFICIARY_ID,
-                TIMESTAMP
+                null,
+                OffsetDateTime.now()
         );
 
         handler.onStateChange(event);
@@ -101,6 +103,7 @@ class LiveFeedWebSocketTest {
                 new BigDecimal("500.00"),
                 BANK_ID,
                 BENEFICIARY_ID,
+                null,
                 TIMESTAMP
         );
 

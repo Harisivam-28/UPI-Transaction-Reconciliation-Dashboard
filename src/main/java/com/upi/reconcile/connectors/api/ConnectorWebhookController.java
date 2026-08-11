@@ -128,7 +128,7 @@ public class ConnectorWebhookController {
 
         // ── 4. Deserialize and process normally ─────────────────────
         Map<String, Object> rawPayload = objectMapper.readValue(rawBody, Map.class);
-        return processGatewayWebhook("razorpay", rawPayload);
+        return processGatewayWebhook("razorpay", rawPayload, merchantUuid);
     }
 
     /**
@@ -136,8 +136,10 @@ public class ConnectorWebhookController {
      */
     @PostMapping("/payu/webhook")
     public ResponseEntity<WebhookResponse> payuWebhook(
-            @RequestBody Map<String, Object> rawPayload) throws Exception {
-        return processGatewayWebhook("payu", rawPayload);
+            @RequestBody Map<String, Object> rawPayload,
+            @RequestParam(value = "merchant_id", required = false) String merchantId) throws Exception {
+        UUID merchantUuid = merchantId != null ? UUID.fromString(merchantId) : null;
+        return processGatewayWebhook("payu", rawPayload, merchantUuid);
     }
 
     /**
@@ -145,8 +147,10 @@ public class ConnectorWebhookController {
      */
     @PostMapping("/cashfree/webhook")
     public ResponseEntity<WebhookResponse> cashfreeWebhook(
-            @RequestBody Map<String, Object> rawPayload) throws Exception {
-        return processGatewayWebhook("cashfree", rawPayload);
+            @RequestBody Map<String, Object> rawPayload,
+            @RequestParam(value = "merchant_id", required = false) String merchantId) throws Exception {
+        UUID merchantUuid = merchantId != null ? UUID.fromString(merchantId) : null;
+        return processGatewayWebhook("cashfree", rawPayload, merchantUuid);
     }
 
     /**
@@ -161,7 +165,7 @@ public class ConnectorWebhookController {
      * </ol>
      */
     private ResponseEntity<WebhookResponse> processGatewayWebhook(
-            String gatewayName, Map<String, Object> rawPayload) throws Exception {
+            String gatewayName, Map<String, Object> rawPayload, UUID merchantId) throws Exception {
 
         PaymentGatewayConnector connector = connectorMap.get(gatewayName);
         if (connector == null) {
@@ -174,6 +178,7 @@ public class ConnectorWebhookController {
         // 1. Normalize the raw payload into internal schema
         WebhookRequest normalized = connector.normalizeWebhookPayload(rawPayload);
         normalized.setSourceGateway(gatewayName);
+        normalized.setMerchantId(merchantId);
 
         log.info("Normalized {} webhook — idempotency_key={}", gatewayName, normalized.getIdempotencyKey());
 

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,6 +63,9 @@ public class TransactionController {
 
         Specification<Transaction> spec = Specification.where(null);
 
+        UUID merchantId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        spec = spec.and(TransactionSpecifications.hasMerchantId(merchantId));
+
         if (state != null && !state.isBlank()) {
             TransactionState txnState = TransactionState.valueOf(state.trim().toUpperCase());
             spec = spec.and(TransactionSpecifications.hasState(txnState));
@@ -85,7 +89,10 @@ public class TransactionController {
 
         log.info("Get history for txn {}", txnId);
 
-        if (transactionRepository.findById(txnId).isEmpty()) {
+        Transaction txn = transactionRepository.findById(txnId).orElse(null);
+        UUID merchantId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        if (txn == null || !merchantId.equals(txn.getMerchantId())) {
             return ResponseEntity.notFound().build();
         }
 
@@ -107,7 +114,9 @@ public class TransactionController {
         log.info("Generate complaint for txn {}", txnId);
 
         Transaction txn = transactionRepository.findById(txnId).orElse(null);
-        if (txn == null) {
+        UUID merchantId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        if (txn == null || !merchantId.equals(txn.getMerchantId())) {
             return ResponseEntity.notFound().build();
         }
 

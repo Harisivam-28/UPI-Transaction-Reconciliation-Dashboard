@@ -26,6 +26,7 @@ public class TransactionStateChangedEvent extends ApplicationEvent {
     private final BigDecimal penaltyAmountInr;
     private final UUID remitterBankId;
     private final UUID beneficiaryBankId;
+    private final UUID merchantId;
     private final OffsetDateTime transitionedAt;
 
     public TransactionStateChangedEvent(Object source,
@@ -35,6 +36,7 @@ public class TransactionStateChangedEvent extends ApplicationEvent {
                                         BigDecimal penaltyAmountInr,
                                         UUID remitterBankId,
                                         UUID beneficiaryBankId,
+                                        UUID merchantId,
                                         OffsetDateTime transitionedAt) {
         super(source);
         this.txnId = txnId;
@@ -43,6 +45,7 @@ public class TransactionStateChangedEvent extends ApplicationEvent {
         this.penaltyAmountInr = penaltyAmountInr;
         this.remitterBankId = remitterBankId;
         this.beneficiaryBankId = beneficiaryBankId;
+        this.merchantId = merchantId;
         this.transitionedAt = transitionedAt;
     }
 }

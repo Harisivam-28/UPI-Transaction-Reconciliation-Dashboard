@@ -20,6 +20,9 @@ export default defineConfig({
         target: apiTarget,
         changeOrigin: true,
         secure: false,
+        headers: {
+          'Origin': 'http://localhost:5173'
+        }
       },
       '/ws': {
         target: apiTarget,

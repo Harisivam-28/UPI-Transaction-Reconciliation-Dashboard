@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,8 +43,10 @@ public class BankController {
     public ResponseEntity<List<BankScorecardDto>> getBankScorecard() {
         log.info("Fetching bank scorecard");
 
+        UUID merchantId = (UUID) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         List<Bank> banks = bankRepository.findAll();
-        List<Transaction> allTransactions = transactionRepository.findAll();
+        List<Transaction> allTransactions = transactionRepository.findAll(TransactionSpecifications.hasMerchantId(merchantId));
 
         // Group transactions by remitter bank for live counts
         Map<UUID, Map<TransactionState, Long>> bankStateCounts = new HashMap<>();

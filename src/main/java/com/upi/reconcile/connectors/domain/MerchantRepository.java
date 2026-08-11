@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
 
     List<Merchant> findByConnectedGateway(String connectedGateway);
+    java.util.Optional<Merchant> findByEmail(String email);
 }

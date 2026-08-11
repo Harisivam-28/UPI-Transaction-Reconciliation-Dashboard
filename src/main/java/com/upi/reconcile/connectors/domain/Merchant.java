@@ -33,16 +33,22 @@ public class Merchant {
     @Column(name = "merchant_id")
     private UUID merchantId;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(nullable = false, unique = true)
+    private String email;
 
-    @Column(name = "connected_gateway", nullable = false)
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    @Column(name = "business_name", nullable = false)
+    private String businessName;
+
+    @Column(name = "connected_gateway")
     private String connectedGateway;
 
-    @Column(name = "encrypted_api_key", nullable = false)
+    @Column(name = "encrypted_api_key")
     private String encryptedApiKey;
 
-    @Column(name = "encrypted_api_secret", nullable = false)
+    @Column(name = "encrypted_api_secret")
     private String encryptedApiSecret;
 
     @Column(name = "webhook_secret")

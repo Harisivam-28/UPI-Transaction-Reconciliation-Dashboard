@@ -44,7 +44,15 @@ public class LiveFeedWebSocketHandler {
                 event.getTransitionedAt()
         );
 
-        messagingTemplate.convertAndSend("/topic/live-feed", message);
+        if (event.getMerchantId() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    event.getMerchantId().toString(),
+                    "/topic/live-feed",
+                    message
+            );
+        } else {
+            messagingTemplate.convertAndSend("/topic/live-feed", message);
+        }
 
         log.debug("Broadcast state change to /topic/live-feed: {} → {} (txn={})",
                 message.oldState(), message.newState(), message.txnId());

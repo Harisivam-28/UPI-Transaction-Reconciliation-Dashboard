@@ -44,4 +44,7 @@ public class WebhookRequest {
 
     /** Optional — which payment gateway connector produced this event (razorpay, payu, cashfree). */
     private String sourceGateway;
+
+    /** Internal — resolved from the webhook path / merchant context. */
+    private UUID merchantId;
 }

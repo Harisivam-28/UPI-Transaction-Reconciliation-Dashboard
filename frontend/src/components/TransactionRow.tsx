@@ -2,7 +2,6 @@ import type { TransactionDto } from '../api/types';
 import { StateBadge } from './StateBadge';
 import { useCountdown } from '../hooks/useCountdown';
 import { formatINR, formatCountdown, shortId } from '../utils/format';
-import { getStateDisplay } from '../utils/stateLabels';
 
 interface TransactionRowProps {
   transaction: TransactionDto;
@@ -11,7 +10,6 @@ interface TransactionRowProps {
 
 export function TransactionRow({ transaction: txn, onClick }: TransactionRowProps) {
   const countdown = useCountdown(txn.tatDeadline);
-  const stateInfo = getStateDisplay(txn.state);
   const isUrgent = txn.state === 'TAT_BREACHED' || txn.state === 'ESCALATED';
   const isPenalty = txn.state === 'PENALTY_ACCRUING';
   const showCountdown = countdown !== null && !['SUCCESS', 'BUSINESS_DECLINED', 'AUTO_REVERSED', 'RESOLVED_REFUNDED', 'ESCALATED'].includes(txn.state);

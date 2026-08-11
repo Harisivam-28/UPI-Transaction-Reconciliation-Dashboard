@@ -186,6 +186,7 @@ public class GatewayResolutionService {
                 txn.getPenaltyAmountInr(),
                 txn.getRemitterBank() != null ? txn.getRemitterBank().getBankId() : null,
                 txn.getBeneficiaryBank() != null ? txn.getBeneficiaryBank().getBankId() : null,
+                txn.getMerchantId(),
                 at));
 
         log.debug("Transition: {} → {} [{}] for txn {}", fromState, toState, reason, txn.getTxnId());

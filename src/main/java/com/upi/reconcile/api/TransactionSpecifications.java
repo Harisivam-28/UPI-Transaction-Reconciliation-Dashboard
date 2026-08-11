@@ -34,4 +34,11 @@ public final class TransactionSpecifications {
                 cb.equal(root.get("beneficiaryBank").get("bankId"), bankId)
         );
     }
+
+    /**
+     * Filters by the merchant ID.
+     */
+    public static Specification<Transaction> hasMerchantId(UUID merchantId) {
+        return (root, query, cb) -> cb.equal(root.get("merchantId"), merchantId);
+    }
 }

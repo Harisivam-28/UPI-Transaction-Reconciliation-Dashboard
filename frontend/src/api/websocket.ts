@@ -18,7 +18,14 @@ export interface WebSocketCallbacks {
  * @see WebSocketConfig.java — registerStompEndpoints + configureMessageBroker
  */
 export function createWebSocketClient(callbacks: WebSocketCallbacks): Client {
+  const token = localStorage.getItem('token');
+  const connectHeaders: Record<string, string> = {};
+  if (token) {
+    connectHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const client = new Client({
+    connectHeaders,
     // Use SockJS as the transport (matching backend's .withSockJS())
     webSocketFactory: () => new SockJS('/ws/live-feed') as unknown as WebSocket,
 
